@@ -9,96 +9,113 @@ def load_data():
     return df
 
 @st.cache_data
-def prepare_recent_year(df):
-    # FIRST INDICATOR: ECONOMIC STATUS using 'share of household income' indicator 
+def prepare_recent_income_year(df):
     df_filtered = df[df['indicator_name'] == 'Share of household income (%)']
-
-    # keep poorest quintile
     df_quintile_1 = df_filtered[df_filtered['subgroup'] == 'Quintile 1 (poorest)']
-
-    # sort so most recent year is first within each country
     df_recent_year = df_quintile_1.sort_values(
         by=['setting', 'date'],
         ascending=[True, False]
     )
-
-    # keep most recent year per country
     df_recent_year = df_recent_year.drop_duplicates(subset=['setting'])
-
     return df_recent_year
 
-
-
-
-# ----- Load + prepare data (cached) -----
+# Load data
 df = load_data()
-df_recent_year = prepare_recent_year(df)
 
-#COntext for the data
+# Income indicator (poorest quintile)
+df_income_recent = prepare_recent_income_year(df)
+income_countries = sorted(df_income_recent['setting'].unique())
 
+# ---- EDUCATION FILTERING ----
+df_education = df[    (df['setting'].isin(income_countries)) &
+    (df['indicator_name'].str.startswith('People with no education (%)')) &
+    (df['date'].notna())
+]
+
+# >>> INSERT HERE <<<
+df_education = df_education.copy()
+
+df_education["sex"] = df_education["indicator_name"].apply(
+    lambda x: "Female" if "Female" in x else ("Male" if "Male" in x else None)
+)
+
+df_education["indicator_clean"] = (
+    df_education["indicator_name"]
+    .str.replace(" - Female", "", regex=False)
+    .str.replace(" - Male", "", regex=False)
+)
+# >>> END INSERT <<<
+
+most_recent_years_education = (
+    df_education.groupby('setting')['date']
+    .max()
+    .reset_index()
+    .rename(columns={'date': 'most_recent_date'})
+)
+
+df_education_recent = pd.merge(
+    df_education,
+    most_recent_years_education,
+    left_on=['setting', 'date'],
+    right_on=['setting', 'most_recent_date'],
+    how='inner'
+).drop(columns=['most_recent_date'])
+
+education_countries = sorted(df_education_recent['setting'].unique())
+
+# Countries in BOTH datasets
+country_list = [c for c in income_countries if c in education_countries]
+
+# Context text
 st.markdown("""
 ### Economic Status
 We are exploring **what percentage of a country’s total household income is received by the poorest 20% of people** (the *poorest quintile*).
 
-NOTE: 
-            
+NOTE:
+
 This value does **not** represent how many people are poor (each quintile always contains 20% of the population).  
 Instead, it shows **how much of the country’s income** is concentrated among those at the bottom of the income distribution.
 
-
-This makes the income share of the poorest 20% a **simple, intuitive indicator** of the country’s economic equality and general socioeconomic conditions.
+This makes the income share of the poorest 20% a **simple, intuitive indicator** of the country’s economic equality.
 """)
 
-
-# --- Country selector ---
-country_list = sorted(df_recent_year['setting'].unique())
-
-preferred_defaults = ["Sweden", "Germany", "Mexico", "Ecuador", "Brazil"]
+# Default countries
+preferred_defaults = ["Dominican Republic", "Kenya", "Philippines", "Peru", "Bangladesh", "South Africa", "Egypt", "Ghana"]
 default_countries = [c for c in preferred_defaults if c in country_list]
 
+# Selector
 selected_countries = st.multiselect(
     "Select countries to display:",
     options=country_list,
-    default= default_countries 
+    default=default_countries
 )
 
-# Filter based on selection
-df_plot = df_recent_year[df_recent_year['setting'].isin(selected_countries)]
-
-# Ensure numeric
+# Filter
+df_plot = df_income_recent[df_income_recent['setting'].isin(selected_countries)]
 df_plot['estimate'] = pd.to_numeric(df_plot['estimate'], errors='coerce')
 
+# Chart
+selection = alt.selection_single(fields=["setting"], empty="none")
 
-
-# --- Horizontal bar chart ---
 chart = (
     alt.Chart(df_plot)
     .mark_bar(color="#4C78A8")
     .encode(
         y=alt.Y("setting:N", sort='-x', title="Country"),
         x=alt.X("estimate:Q", title="Poorest Quintile Income Share"),
-        tooltip=["setting", "estimate", "date"]
+        tooltip=["setting", "estimate", "date"],
+        opacity=alt.condition(selection, alt.value(1), alt.value(0.3))
     )
-    .properties(
-        width=600,
-        height=400,
-        title=alt.TitleParams(
-            "Economic Indicator",
-            anchor="middle"
-        )
-    )
+    .add_params(selection)
+    .properties(width=600, height=400, title="Economic Indicator")
 )
 
 
-# Labels
+
+
 text = (
     alt.Chart(df_plot)
-    .mark_text(
-        align="left",
-        baseline="middle",
-        dx=3,
-        fontSize=12
-    )
+    .mark_text(align="left", baseline="middle", dx=3, fontSize=12)
     .encode(
         y=alt.Y("setting:N", sort='-x'),
         x=alt.X("estimate:Q"),
@@ -106,18 +123,14 @@ text = (
     )
 )
 
-
-
-# Display (update Streamlit warning)
 st.altair_chart(chart + text, width="stretch")
-
 
 with st.expander("ℹ️ More about this data"):
     st.write("""
     **Data filtering details:**
-    - We use the **most recent available year for each country**, and these years may **not** be the same across countries.
-    - The visualization shows the **share of household income**, specifically for the **Poorest quintile (Q1)**.
-    - Countries with missing or incomplete data for their latest available year are excluded.
+    - Countries shown must have **both income data AND education data** available.
+    - Only the **most recent available year per country** is used.
+    - The visualization shows the **income share of the poorest quintile (Q1)**.
     """)
 
 
