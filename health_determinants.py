@@ -334,45 +334,42 @@ def plot_setting_map(iso3, df_regions):
         st.error(f"No rows found for ISO3 code: {iso3}")
         return None
 
-    # Load ADM1 geojson
     gdf = load_gadm_adm1(iso3)
     if gdf is None:
         st.error("Could not load boundaries.")
         return None
 
-    # Fuzzy match
     df_setting = fuzzy_merge_regions(df_setting, gdf)
 
-    # Convert GeoDataFrame to GeoJSON dict
     geojson_dict = json.loads(gdf.to_json())
 
-    # Plotly choropleth
-    fig = px.choropleth(
-        df_setting,
-        geojson=geojson_dict,
-        locations="matched_region",     # column in your df
-        featureidkey="properties.NAME_1",  # field inside geojson
-        color="value",
-        color_continuous_scale="Viridis",
-        hover_name="region",            # tooltip name
-        hover_data={
-            "value": ":.1f",
-            "matched_region": False,    # hide internal matched name
-            "iso3": False
-        },
-    )
+    # center map on the country geometry
+    centroid = gdf.geometry.unary_union.centroid
+    center_lat = centroid.y
+    center_lon = centroid.x
 
-    fig.update_geos(fitbounds="locations", visible=False)
+    fig = px.choropleth_mapbox(
+    df_setting,
+    geojson=geojson_dict,
+    locations="matched_region",
+    featureidkey="properties.NAME_1",
+    color="value",
+    color_continuous_scale="RdBu_r",   
+    hover_name="region",
+    hover_data={"value": ":.1f"},
+    mapbox_style="carto-positron",
+    center={"lat": center_lat, "lon": center_lon},
+    zoom=5,
+    opacity=0.8,
+)
 
     fig.update_layout(
-        title=f"{iso3} — Estimates by Subregion",
         margin=dict(l=0, r=0, t=40, b=0),
-        height=600
+        height=600,
+        title=f"{iso3} — Population with electricity (%)"
     )
 
     return fig
-    return fig
-
 
 # -----------------------------------------------------
 # Streamlit Integration
@@ -395,6 +392,10 @@ iso3_selected = country_to_iso[country_selected]
 
 fig = plot_setting_map(iso3_selected, df_regions)
 fig.update_traces(marker_line_width=0.5, marker_line_color="black")
+fig.update_traces(
+    marker_line_color="black",
+    marker_line_width=1
+)
 if fig:
     st.plotly_chart(fig, use_container_width=True)
 
