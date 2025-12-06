@@ -385,9 +385,9 @@ elif page == "Health Determinants":
             y=alt.Y("setting:N", sort='-x', title="Country"),
             x=alt.X("estimate:Q", title="Poorest Quintile Income Share (%)"),
             tooltip=["setting", "estimate", "date"],
-            opacity=alt.condition(selection, alt.value(1), alt.value(0.3))
+            #opacity=alt.condition(selection, alt.value(1), alt.value(0.3))
         )
-        .add_params(selection)
+        #.add_params(selection)
         .properties(width=600, height=400, title="Economic Indicator")
     )
 
