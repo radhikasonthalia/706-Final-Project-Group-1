@@ -9,7 +9,7 @@ st.set_page_config(page_title="Health Equity Dashboards", layout="wide")
 # Sidebar for page selection
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Select a visualization:", 
-                        ["Under-5 Mortality", "Health Determinants", "Vaccination Coverage"])
+                        ["Health Determinants", "Vaccination Coverage", "Under-5 Mortality", ])
 
 # -------------------------------------------------------------------------
 # Visualization 1: Under-5 Mortality
