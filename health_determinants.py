@@ -243,7 +243,14 @@ def pie_chart(data, title):
 
 st.markdown(f"##### Country selected: **{selected_country_name}**")
 
-st.header("Education Levels")
+
+# Context text
+st.markdown("""
+## Education Levels
+We are exploring the percentage of people with no formal education, broken down by wealth quintile (from poorest to richest), separately for men and women.
+
+This makes the indicator a clear way to understand how **poverty intersects with education** for men and women.
+""")
 st.markdown("#### % of people with no education by wealth quintile")
 
 col1, col2 = st.columns(2)
@@ -259,7 +266,14 @@ with col2:
         pie_chart(df_female, "Female"),
         use_container_width=True
     )
-
+with st.expander("ℹ️ More about this data "):
+    st.write("""
+    **Data filtering details:**
+    - Only the **most recent year** of data per country is used.
+    - Education levels come from **self-reported survey responses**, which may vary by country.
+    - Wealth quintiles are **relative within each country**, so values are not comparable across countries.
+    - Some countries may have **small sample sizes** for certain subgroups (e.g., poorest women), which can affect percentages.
+    """)
 
 #----LIVING CDTS PLOTS-----
 df_regions = df_living_recent[
@@ -282,6 +296,16 @@ country_selected = selected_country_name
 #The following code was written with help of Harvard Sandbox AI
 # I just wanted to learn some tools and practice them, 
 # this doesn't have to be graded!
+
+st.markdown("""
+## Living Conditions 
+This map shows the **percentage of people with electricity access** in each subnational region of the selected country.
+
+The map helps visualize **geographic inequality** by highlighting where service gaps are widest.
+
+This makes electricity access a powerful indicator of **infrastructure development and regional inequality** within a country.
+""")
+st.markdown("#### % of people with no education by wealth quintile")
 
 import streamlit as st
 import geopandas as gpd
@@ -403,11 +427,20 @@ fig.update_traces(
 if fig:
     st.plotly_chart(fig, use_container_width=True)
 
+with st.expander("ℹ️ More about this data"):
+    st.write("""
+    **Data filtering details:**
+    - Regions shown are only the ones that have **electricity-access estimates** available.
+    - Only the **latest available year** per country is used; regions may differ in survey year.
+    - Administrative boundaries come from external datasets and may not match **current official divisions** exactly.
+    - Some regions may have **missing or outdated values**, especially where survey coverage is limited.
+    - Electricity access reflects whether a household reports having power, not its **reliability or quality**.
+    """)
 
 # Footer with data information
 
 st.markdown("---")
-st.caption(f"Data Source: UN IGME | Last Updated: {df_living_recent['update'].iloc[0]} | Countries: {df_living_recent['setting'].nunique()} | Years: {df_living_recent['date'].min()}-{df_living_recent['date'].max()}")
+st.caption(f"Data Source: Health determinants (DHS Program and UNICEF Data Warehouse) | Last Updated: {df_living_recent['update'].iloc[0]} | Countries: {df_living_recent['setting'].nunique()} | Years: {df_living_recent['date'].min()}-{df_living_recent['date'].max()}")
 
 #Sources:
 #Some code sections being reused but updated from 706 Problem Set 3
