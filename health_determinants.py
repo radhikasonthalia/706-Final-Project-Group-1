@@ -2,6 +2,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 import random
+import plotly.express as px
 
 @st.cache_data
 def load_data():
@@ -78,6 +79,33 @@ education_countries = sorted(df_education_recent['setting'].unique())
 # Countries in BOTH datasets
 country_list = [c for c in income_countries if c in education_countries]
 
+
+# ---- LIVING CONDITIONS FILTERING ----
+
+# keep only the countries that appear in df_education_recent
+valid_settings = df_education_recent["setting"].unique()
+
+df_living = df[
+    df["setting"].isin(valid_settings) &
+    df["indicator_name"].str.startswith("Population with electricity (%)") &
+    df["dimension"].isin(["Subnational region", "Place of residence"])
+].copy()
+
+most_recent_living = (
+    df_living.groupby("setting")["date"]
+    .max()
+    .reset_index()
+    .rename(columns={"date": "most_recent_date"})
+)
+
+df_living_recent = pd.merge(
+    df_living,
+    most_recent_living,
+    left_on=["setting", "date"],
+    right_on=["setting", "most_recent_date"],
+    how="inner"
+).drop(columns=["most_recent_date"])
+
 # Context text
 st.markdown("""
 ## Economic Status
@@ -114,7 +142,7 @@ chart = (
     .mark_bar(color="#4C78A8")
     .encode(
         y=alt.Y("setting:N", sort='-x', title="Country"),
-        x=alt.X("estimate:Q", title="Poorest Quintile Income Share"),
+        x=alt.X("estimate:Q", title="Poorest Quintile Income Share (%)"),
         tooltip=["setting", "estimate", "date"],
         opacity=alt.condition(selection, alt.value(1), alt.value(0.3))
     )
@@ -233,7 +261,148 @@ with col2:
     )
 
 
+#----LIVING CDTS PLOTS-----
+df_regions = df_living_recent[
+    df_living_recent["dimension"] == "Subnational region"
+].copy()
 
+df_regions = df_regions.rename(columns={
+    "subgroup": "region",
+    "estimate": "value"
+})
+
+country_to_iso = dict(zip(df_regions["setting"], df_regions["iso3"]))
+
+country_selected = selected_country_name
+
+
+
+
+import streamlit as st
+import geopandas as gpd
+import requests
+import os
+import matplotlib.pyplot as plt
+from rapidfuzz import process, fuzz
+import json
+
+def load_gadm_adm1(iso3):
+    iso3 = iso3.upper()
+    os.makedirs("geo_gadm", exist_ok=True)
+    path = f"geo_gadm/{iso3}_adm1.json"
+
+    if os.path.exists(path):
+        return gpd.read_file(path)
+
+    url = f"https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_{iso3}_1.json"
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+
+    with open(path, "wb") as f:
+        f.write(r.content)
+
+    return gpd.read_file(path)
+
+
+# -----------------------------------------------------
+# Fuzzy match your region names to GADM NAME_1
+# -----------------------------------------------------
+def fuzzy_merge_regions(df_setting, gdf):
+    gadm_names = list(gdf["NAME_1"])
+
+    matches = df_setting["region"].apply(
+        lambda x: process.extractOne(
+            x,
+            gadm_names,
+            scorer=fuzz.WRatio
+        )[0]
+    )
+
+    df_setting = df_setting.copy()
+    df_setting["matched_region"] = matches
+    return df_setting
+
+
+# -----------------------------------------------------
+# Plot choropleth map
+# -----------------------------------------------------
+def plot_setting_map(iso3, df_regions):
+    df_setting = df_regions[df_regions["iso3"] == iso3]
+
+    if df_setting.empty:
+        st.error(f"No rows found for ISO3 code: {iso3}")
+        return None
+
+    # Load ADM1 geojson
+    gdf = load_gadm_adm1(iso3)
+    if gdf is None:
+        st.error("Could not load boundaries.")
+        return None
+
+    # Fuzzy match
+    df_setting = fuzzy_merge_regions(df_setting, gdf)
+
+    # Convert GeoDataFrame to GeoJSON dict
+    geojson_dict = json.loads(gdf.to_json())
+
+    # Plotly choropleth
+    fig = px.choropleth(
+        df_setting,
+        geojson=geojson_dict,
+        locations="matched_region",     # column in your df
+        featureidkey="properties.NAME_1",  # field inside geojson
+        color="value",
+        color_continuous_scale="Viridis",
+        hover_name="region",            # tooltip name
+        hover_data={
+            "value": ":.1f",
+            "matched_region": False,    # hide internal matched name
+            "iso3": False
+        },
+    )
+
+    fig.update_geos(fitbounds="locations", visible=False)
+
+    fig.update_layout(
+        title=f"{iso3} — Estimates by Subregion",
+        margin=dict(l=0, r=0, t=40, b=0),
+        height=600
+    )
+
+    return fig
+    return fig
+
+
+# -----------------------------------------------------
+# Streamlit Integration
+# -----------------------------------------------------
+def app(df_regions):
+    st.title("Setting Subregion Choropleth")
+
+    # assuming df_regions has columns: setting, iso3, region, value
+    setting_to_iso = dict(zip(df_regions["setting"], df_regions["iso3"]))
+
+    setting = st.selectbox("Choose a setting", sorted(df_regions["setting"].unique()))
+    iso3 = setting_to_iso[setting]
+
+    fig = plot_setting_map(iso3, df_regions)
+    if fig:
+        st.pyplot(fig)
+
+
+iso3_selected = country_to_iso[country_selected]
+
+fig = plot_setting_map(iso3_selected, df_regions)
+fig.update_traces(marker_line_width=0.5, marker_line_color="black")
+if fig:
+    st.plotly_chart(fig, use_container_width=True)
+
+# -----------------------------------------------------------------------------
+# Footer with data information
+# -----------------------------------------------------------------------------
+st.markdown("---")
+st.caption(f"Data Source: UN IGME | Last Updated: {df_living_recent['update'].iloc[0]} | Countries: {df_living_recent['setting'].nunique()} | Years: {df_living_recent['date'].min()}-{df_living_recent['date'].max()}")
 
 #Sources:
 #Some code sections being reused but updated from 706 Problem Set 3
