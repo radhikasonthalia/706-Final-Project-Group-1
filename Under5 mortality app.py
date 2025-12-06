@@ -102,15 +102,13 @@ else:
         df_plot = df_filtered[df_filtered['dimension'] == 'Sex'].copy()
         df_plot = df_plot[['setting', 'date', 'subgroup', 'estimate']]
         
-        # Create line chart - use explicit strokeDash values for better legend visibility
+        # Use faceting by country - much clearer than strokeDash legend
         chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
             x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1950, 2025, 10)))),
             y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
             color=alt.Color('subgroup:N', title='Sex',
                            scale=alt.Scale(domain=['Female', 'Male'], 
                                           range=['#e377c2', '#1f77b4'])),
-            strokeDash=alt.StrokeDash('setting:N', title='Country',
-                                      scale=alt.Scale(range=[[1, 0], [5, 5]])),  # solid vs dashed
             tooltip=[
                 alt.Tooltip('setting:N', title='Country'),
                 alt.Tooltip('date:O', title='Year'),
@@ -118,34 +116,14 @@ else:
                 alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
             ]
         ).properties(
-            width=800,
+            width=350,
             height=400,
             title='Under-5 Mortality Rate by Sex'
+        ).facet(
+            column=alt.Column('setting:N', title='Country')
         )
         
         st.altair_chart(chart, use_container_width=True)
-        
-        # Add a faceted view if two countries selected
-        if len(selected_countries) == 2:
-            st.subheader("Side-by-Side Comparison")
-            facet_chart = alt.Chart(df_plot).mark_line(strokeWidth=2, point=True).encode(
-                x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1950, 2025, 10)))),
-                y=alt.Y('estimate:Q', title='Mortality Rate'),
-                color=alt.Color('subgroup:N', title='Sex',
-                               scale=alt.Scale(domain=['Female', 'Male'], 
-                                              range=['#e377c2', '#1f77b4'])),
-                tooltip=[
-                    alt.Tooltip('setting:N', title='Country'),
-                    alt.Tooltip('date:O', title='Year'),
-                    alt.Tooltip('subgroup:N', title='Sex'),
-                    alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
-                ]
-            ).facet(
-                column=alt.Column('setting:N', title='Country')
-            ).properties(
-                title='Under-5 Mortality Rate by Sex - Country Comparison'
-            )
-            st.altair_chart(facet_chart, use_container_width=True)
     
     else:  # Split by Economic Status
         df_plot = df_filtered[df_filtered['dimension'] == 'Economic status (wealth quintile)'].copy()
@@ -163,14 +141,13 @@ else:
             # Color scheme for quintiles (red = poorest, green = richest)
             quintile_colors = ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4']
             
+            # Use faceting by country for clear separation
             chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
                 x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1990, 2025, 5)))),
                 y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
                 color=alt.Color('quintile:N', title='Economic Status',
                                scale=alt.Scale(domain=quintile_labels, range=quintile_colors),
                                sort=quintile_labels),
-                strokeDash=alt.StrokeDash('setting:N', title='Country',
-                                          scale=alt.Scale(range=[[1, 0], [5, 5]])),  # solid vs dashed
                 tooltip=[
                     alt.Tooltip('setting:N', title='Country'),
                     alt.Tooltip('date:O', title='Year'),
@@ -178,34 +155,14 @@ else:
                     alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
                 ]
             ).properties(
-                width=800,
+                width=350,
                 height=400,
                 title='Under-5 Mortality Rate by Economic Status (Wealth Quintile)'
+            ).facet(
+                column=alt.Column('setting:N', title='Country')
             )
             
             st.altair_chart(chart, use_container_width=True)
-            
-            # Add faceted view for two countries
-            if len(selected_countries) == 2:
-                st.subheader("Side-by-Side Comparison")
-                facet_chart = alt.Chart(df_plot).mark_line(strokeWidth=2, point=True).encode(
-                    x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1990, 2025, 5)))),
-                    y=alt.Y('estimate:Q', title='Mortality Rate'),
-                    color=alt.Color('quintile:N', title='Economic Status',
-                                   scale=alt.Scale(domain=quintile_labels, range=quintile_colors),
-                                   sort=quintile_labels),
-                    tooltip=[
-                        alt.Tooltip('setting:N', title='Country'),
-                        alt.Tooltip('date:O', title='Year'),
-                        alt.Tooltip('quintile:N', title='Economic Status'),
-                        alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
-                    ]
-                ).facet(
-                    column=alt.Column('setting:N', title='Country')
-                ).properties(
-                    title='Under-5 Mortality Rate by Economic Status - Country Comparison'
-                )
-                st.altair_chart(facet_chart, use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # Footer with data information
