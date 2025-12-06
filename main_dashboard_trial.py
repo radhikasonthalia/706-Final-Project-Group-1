@@ -551,7 +551,7 @@ elif page == "Health Determinants":
 
     This makes electricity access a powerful indicator of **infrastructure development and regional inequality** within a country.
     """)
-    st.markdown("#### Living Conditions Indicator: Population with no electricity (%) ")
+    st.markdown("##### Living Conditions Indicator: Population with no electricity (%) ")
 
     import streamlit as st
     import geopandas as gpd
