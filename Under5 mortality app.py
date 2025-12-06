@@ -101,7 +101,7 @@ else:
         df_plot = df_filtered[df_filtered['dimension'] == 'Sex'].copy()
         df_plot = df_plot[['setting', 'date', 'subgroup', 'estimate']]
         
-        # Use faceting by country - much clearer than strokeDash legend
+        # Use faceting by country with max 3 columns per row
         chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
             x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1950, 2025, 10)))),
             y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
@@ -115,11 +115,12 @@ else:
                 alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
             ]
         ).properties(
-            width=350,
-            height=400,
+            width=280,
+            height=300,
             title='Under-5 Mortality Rate by Sex'
         ).facet(
-            column=alt.Column('setting:N', title='Country')
+            facet=alt.Facet('setting:N', title='Country'),
+            columns=3  # Max 3 per row
         )
         
         st.altair_chart(chart, use_container_width=True)
@@ -137,11 +138,33 @@ else:
             quintile_labels = ['Q1 (Poorest)', 'Q2', 'Q3', 'Q4', 'Q5 (Richest)']
             df_plot['quintile'] = df_plot['subgroup'].map(dict(zip(quintile_order, quintile_labels)))
             
-            # Color scheme for quintiles (red = poorest, green = richest)
+            # Get ALL countries data for grey background
+            df_all_econ = df[df['dimension'] == 'Economic status (wealth quintile)'].copy()
+            df_all_econ = df_all_econ[['setting', 'date', 'subgroup', 'estimate']]
+            df_all_econ['quintile'] = df_all_econ['subgroup'].map(dict(zip(quintile_order, quintile_labels)))
+            
+            # Background: all OTHER countries in grey (aggregate by country-year, take mean across quintiles for simplicity)
+            df_background = df_all_econ[~df_all_econ['setting'].isin(selected_countries)]
+            df_bg_avg = df_background.groupby(['setting', 'date'])['estimate'].mean().reset_index()
+            
+            # Color scheme for quintiles (red = poorest, blue = richest)
             quintile_colors = ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4']
             
-            # Use faceting by country for clear separation
-            chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
+            # Grey background lines (all other countries - averaged)
+            background = alt.Chart(df_bg_avg).mark_line(strokeWidth=1, opacity=0.3).encode(
+                x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1990, 2025, 5)))),
+                y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
+                detail='setting:N',
+                color=alt.value('#888888'),
+                tooltip=[
+                    alt.Tooltip('setting:N', title='Country'),
+                    alt.Tooltip('date:O', title='Year'),
+                    alt.Tooltip('estimate:Q', title='Avg Mortality Rate', format='.1f')
+                ]
+            )
+            
+            # Foreground: selected countries with quintile colors
+            foreground = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
                 x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1990, 2025, 5)))),
                 y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
                 color=alt.Color('quintile:N', title='Economic Status',
@@ -153,12 +176,16 @@ else:
                     alt.Tooltip('quintile:N', title='Economic Status'),
                     alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
                 ]
-            ).properties(
-                width=350,
-                height=400,
-                title='Under-5 Mortality Rate by Economic Status (Wealth Quintile)'
+            )
+            
+            # Combine and facet with max 3 columns
+            chart = (background + foreground).properties(
+                width=280,
+                height=300,
+                title='Under-5 Mortality Rate by Economic Status'
             ).facet(
-                column=alt.Column('setting:N', title='Country')
+                facet=alt.Facet('setting:N', title='Country'),
+                columns=3
             )
             
             st.altair_chart(chart, use_container_width=True)
