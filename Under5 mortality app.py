@@ -166,6 +166,70 @@ else:
             st.altair_chart(chart, use_container_width=True)
 
 # -----------------------------------------------------------------------------
+# Heatmap: Countries × Years
+# -----------------------------------------------------------------------------
+st.markdown("---")
+st.header("🗓️ Heatmap: Mortality Rate Over Time")
+
+# Prepare data for heatmap
+df_heatmap = df[df['dimension'] == 'Sex'].copy()
+df_heatmap = df_heatmap.drop_duplicates(subset=['setting', 'date'])
+df_heatmap = df_heatmap[['setting', 'date', 'setting_average', 'whoreg6']].rename(
+    columns={'setting_average': 'mortality_rate'}
+)
+
+# Filter options
+col1, col2 = st.columns(2)
+
+with col1:
+    # Region filter
+    regions = ['All Regions'] + sorted(df_heatmap['whoreg6'].dropna().unique().tolist())
+    selected_region = st.selectbox("Filter by WHO Region:", options=regions)
+
+with col2:
+    # Year range filter
+    year_range = st.slider(
+        "Select year range:",
+        min_value=int(df_heatmap['date'].min()),
+        max_value=int(df_heatmap['date'].max()),
+        value=(1990, 2022)
+    )
+
+# Apply filters
+df_heatmap_filtered = df_heatmap[
+    (df_heatmap['date'] >= year_range[0]) & 
+    (df_heatmap['date'] <= year_range[1])
+]
+
+if selected_region != 'All Regions':
+    df_heatmap_filtered = df_heatmap_filtered[df_heatmap_filtered['whoreg6'] == selected_region]
+
+# Sort countries by their most recent mortality rate
+country_order = df_heatmap_filtered[df_heatmap_filtered['date'] == df_heatmap_filtered['date'].max()].sort_values(
+    'mortality_rate', ascending=False
+)['setting'].tolist()
+
+# Create heatmap
+heatmap = alt.Chart(df_heatmap_filtered).mark_rect().encode(
+    x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(year_range[0], year_range[1]+1, 5)))),
+    y=alt.Y('setting:N', title='Country', sort=country_order),
+    color=alt.Color('mortality_rate:Q', 
+                    title='Mortality Rate',
+                    scale=alt.Scale(scheme='reds', domain=[0, 300])),
+    tooltip=[
+        alt.Tooltip('setting:N', title='Country'),
+        alt.Tooltip('date:O', title='Year'),
+        alt.Tooltip('mortality_rate:Q', title='Mortality Rate', format='.1f')
+    ]
+).properties(
+    width=800,
+    height=max(400, len(country_order) * 12),  # Dynamic height based on number of countries
+    title=f'Under-5 Mortality Rate Heatmap ({year_range[0]}-{year_range[1]})'
+)
+
+st.altair_chart(heatmap, use_container_width=True)
+
+# -----------------------------------------------------------------------------
 # Footer with data information
 # -----------------------------------------------------------------------------
 st.markdown("---")
