@@ -50,18 +50,36 @@ else:
     df_filtered = df[df['setting'].isin(selected_countries)]
     
     if trend_type == 'Overall Trend':
-        # Use setting_average for overall trend
-        df_plot = df_filtered[df_filtered['dimension'] == 'Sex'].copy()
-        df_plot = df_plot.drop_duplicates(subset=['setting', 'date'])
-        df_plot = df_plot[['setting', 'date', 'setting_average']].rename(
+        # Get ALL countries data for grey background
+        df_all = df[df['dimension'] == 'Sex'].copy()
+        df_all = df_all.drop_duplicates(subset=['setting', 'date'])
+        df_all = df_all[['setting', 'date', 'setting_average']].rename(
             columns={'setting_average': 'estimate'}
         )
-        df_plot['category'] = 'Overall'
         
-        # Create line chart
-        chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
+        # Background: all OTHER countries in grey
+        df_background = df_all[~df_all['setting'].isin(selected_countries)]
+        
+        # Foreground: selected countries
+        df_selected = df_all[df_all['setting'].isin(selected_countries)]
+        
+        # Grey background lines (all other countries)
+        background = alt.Chart(df_background).mark_line(strokeWidth=1, opacity=0.3).encode(
             x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1950, 2025, 5)))),
             y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
+            detail='setting:N',  # separate line per country but no legend
+            color=alt.value('#888888'),
+            tooltip=[
+                alt.Tooltip('setting:N', title='Country'),
+                alt.Tooltip('date:O', title='Year'),
+                alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
+            ]
+        )
+        
+        # Highlighted selected countries
+        foreground = alt.Chart(df_selected).mark_line(strokeWidth=3, point=True).encode(
+            x=alt.X('date:O', title='Year'),
+            y=alt.Y('estimate:Q'),
             color=alt.Color('setting:N', title='Country', 
                            scale=alt.Scale(scheme='category10')),
             tooltip=[
@@ -69,7 +87,10 @@ else:
                 alt.Tooltip('date:O', title='Year'),
                 alt.Tooltip('estimate:Q', title='Mortality Rate', format='.1f')
             ]
-        ).properties(
+        )
+        
+        # Layer background + foreground
+        chart = (background + foreground).properties(
             width=800,
             height=400,
             title='Under-5 Mortality Rate: Overall Trend'
@@ -81,14 +102,15 @@ else:
         df_plot = df_filtered[df_filtered['dimension'] == 'Sex'].copy()
         df_plot = df_plot[['setting', 'date', 'subgroup', 'estimate']]
         
-        # Create line chart with facets
-        chart = alt.Chart(df_plot).mark_line(strokeWidth=2, point=True).encode(
+        # Create line chart - use explicit strokeDash values for better legend visibility
+        chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
             x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1950, 2025, 10)))),
             y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
             color=alt.Color('subgroup:N', title='Sex',
                            scale=alt.Scale(domain=['Female', 'Male'], 
                                           range=['#e377c2', '#1f77b4'])),
-            strokeDash=alt.StrokeDash('setting:N', title='Country'),
+            strokeDash=alt.StrokeDash('setting:N', title='Country',
+                                      scale=alt.Scale(range=[[1, 0], [5, 5]])),  # solid vs dashed
             tooltip=[
                 alt.Tooltip('setting:N', title='Country'),
                 alt.Tooltip('date:O', title='Year'),
@@ -141,13 +163,14 @@ else:
             # Color scheme for quintiles (red = poorest, green = richest)
             quintile_colors = ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4']
             
-            chart = alt.Chart(df_plot).mark_line(strokeWidth=2, point=True).encode(
+            chart = alt.Chart(df_plot).mark_line(strokeWidth=2.5, point=True).encode(
                 x=alt.X('date:O', title='Year', axis=alt.Axis(labelAngle=-45, values=list(range(1990, 2025, 5)))),
                 y=alt.Y('estimate:Q', title='Mortality Rate (per 1,000 live births)'),
                 color=alt.Color('quintile:N', title='Economic Status',
                                scale=alt.Scale(domain=quintile_labels, range=quintile_colors),
                                sort=quintile_labels),
-                strokeDash=alt.StrokeDash('setting:N', title='Country'),
+                strokeDash=alt.StrokeDash('setting:N', title='Country',
+                                          scale=alt.Scale(range=[[1, 0], [5, 5]])),  # solid vs dashed
                 tooltip=[
                     alt.Tooltip('setting:N', title='Country'),
                     alt.Tooltip('date:O', title='Year'),
