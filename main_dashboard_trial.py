@@ -393,7 +393,7 @@ elif page == "Health Determinants":
             #opacity=alt.condition(selection, alt.value(1), alt.value(0.3))
         )
         #.add_params(selection)
-        .properties(width=600, height=400, title="Economic Indicator")
+        .properties(width=600, height=400, title="Economic Indicator: Share of household income (%)")
     )
 
 
@@ -497,7 +497,7 @@ elif page == "Health Determinants":
 
     This makes the indicator a clear way to understand how **poverty intersects with education** for men and women.
     """)
-    st.markdown("#### % of people with no education by wealth quintile")
+    st.markdown("##### Education Indicator: % of people with no education by wealth quintile")
 
     col1, col2 = st.columns(2)
 
@@ -551,7 +551,7 @@ elif page == "Health Determinants":
 
     This makes electricity access a powerful indicator of **infrastructure development and regional inequality** within a country.
     """)
-    st.markdown("#### % of people with no education by wealth quintile")
+    st.markdown("#### Living Conditions Indicator: Population with no electricity (%) ")
 
     import streamlit as st
     import geopandas as gpd
@@ -602,7 +602,7 @@ elif page == "Health Determinants":
 
     # Plot choropleth map
 
-    def plot_setting_map(iso3, df_regions):
+    def plot_setting_map(iso3, df_regions, country):
         df_setting = df_regions[df_regions["iso3"] == iso3]
 
         if df_setting.empty:
@@ -641,7 +641,7 @@ elif page == "Health Determinants":
         fig.update_layout(
             margin=dict(l=0, r=0, t=40, b=0),
             height=600,
-            title=f"{iso3} — Population with electricity (%)"
+            title=f"{country} "
         )
 
         return fig
@@ -664,7 +664,7 @@ elif page == "Health Determinants":
 
     iso3_selected = country_to_iso[country_selected]
 
-    fig = plot_setting_map(iso3_selected, df_regions)
+    fig = plot_setting_map(iso3_selected, df_regions, country_selected)
     fig.update_traces(marker_line_width=0.5, marker_line_color="black")
     fig.update_traces(
         marker_line_color="black",
