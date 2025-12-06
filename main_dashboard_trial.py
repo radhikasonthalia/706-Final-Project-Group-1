@@ -347,6 +347,8 @@ elif page == "Health Determinants":
         how="inner"
     ).drop(columns=["most_recent_date"])
 
+    living_countries = sorted(df_living_recent['setting'].unique())
+
     # Context text
     st.markdown("""
     ## Economic Status
@@ -359,6 +361,9 @@ elif page == "Health Determinants":
 
     This makes the income share of the poorest 20% a **simple, intuitive indicator** of the country’s economic equality.
     """)
+
+    # Countries in BOTH datasets
+    country_list = [c for c in income_countries if c in living_countries]
 
     # Default countries
     preferred_defaults = ["Dominican Republic", "Armenia", "Philippines", "Peru", "Bangladesh", "South Africa", "Brazil", "Ghana"]
