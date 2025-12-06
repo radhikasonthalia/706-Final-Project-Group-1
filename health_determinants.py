@@ -278,6 +278,11 @@ country_selected = selected_country_name
 
 
 
+#LIVING CONDITIONS
+#The following code was written with help of Harvard Sandbox AI
+# I just wanted to learn some tools and practice them, 
+# this doesn't have to be graded!
+
 import streamlit as st
 import geopandas as gpd
 import requests
@@ -305,9 +310,9 @@ def load_gadm_adm1(iso3):
     return gpd.read_file(path)
 
 
-# -----------------------------------------------------
+
 # Fuzzy match your region names to GADM NAME_1
-# -----------------------------------------------------
+
 def fuzzy_merge_regions(df_setting, gdf):
     gadm_names = list(gdf["NAME_1"])
 
@@ -324,9 +329,9 @@ def fuzzy_merge_regions(df_setting, gdf):
     return df_setting
 
 
-# -----------------------------------------------------
+
 # Plot choropleth map
-# -----------------------------------------------------
+
 def plot_setting_map(iso3, df_regions):
     df_setting = df_regions[df_regions["iso3"] == iso3]
 
@@ -371,9 +376,8 @@ def plot_setting_map(iso3, df_regions):
 
     return fig
 
-# -----------------------------------------------------
 # Streamlit Integration
-# -----------------------------------------------------
+
 def app(df_regions):
     st.title("Setting Subregion Choropleth")
 
@@ -399,9 +403,9 @@ fig.update_traces(
 if fig:
     st.plotly_chart(fig, use_container_width=True)
 
-# -----------------------------------------------------------------------------
+
 # Footer with data information
-# -----------------------------------------------------------------------------
+
 st.markdown("---")
 st.caption(f"Data Source: UN IGME | Last Updated: {df_living_recent['update'].iloc[0]} | Countries: {df_living_recent['setting'].nunique()} | Years: {df_living_recent['date'].min()}-{df_living_recent['date'].max()}")
 
