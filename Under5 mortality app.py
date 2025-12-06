@@ -23,17 +23,16 @@ st.markdown("*Deaths per 1,000 live births*")
 # -----------------------------------------------------------------------------
 st.markdown("""
 **Instructions:** 
-- First, select 1-2 countries to compare
+- Select countries to compare
 - Then choose the type of trend analysis: Overall, by Sex, or by Economic Status
 """)
 
-# Country selector (max 2)
+# Country selector
 country_list = sorted(df['setting'].unique())
 selected_countries = st.multiselect(
-    "Select up to 2 countries to compare:",
+    "Select countries to compare:",
     options=country_list,
-    default=['Brazil', 'India'],
-    max_selections=2
+    default=['Brazil', 'India']
 )
 
 if len(selected_countries) == 0:
