@@ -1,7 +1,6 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
-import random
 import plotly.express as px
 
 @st.cache_data
