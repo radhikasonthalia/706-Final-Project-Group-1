@@ -761,7 +761,7 @@ elif page == "Vaccination Coverage":
 
     # Country selector
     countries = sorted(df['setting'].dropna().unique())
-    country_dropdown = alt.binding_select(options=[None] + countries, name='Country: ')
+    country_dropdown = alt.binding_select(options=countries, name='Country: ')
     country_select = alt.selection_point(fields=['setting'], bind=country_dropdown, name='country_select', value=None)
 
     # Color scale
