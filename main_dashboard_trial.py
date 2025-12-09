@@ -469,14 +469,23 @@ elif page == "Health Determinants":
     df_female = df_country[df_country["sex"] == "Female"]
 
 
-
+    quintile_colors = ['#d62728', '#ff7f0e', '#bcbd22', '#2ca02c', '#1f77b4']
     def pie_chart(data, title):
         return (
             alt.Chart(data)
             .mark_arc()
             .encode(
                 theta=alt.Theta("estimate:Q", stack=True),
-                color=alt.Color("subgroup:N", title="Wealth Quintile"),
+                color=alt.Color("subgroup:N", title="Wealth Quintile", scale=alt.Scale(
+                    domain=[
+                        "Quintile 1 (poorest)",
+                        "Quintile 2",
+                        "Quintile 3",
+                        "Quintile 4",
+                        "Quintile 5 (richest)"
+                    ],  
+                    range=quintile_colors
+                )),
                 tooltip=["subgroup", "estimate"]
             )
             .properties(
