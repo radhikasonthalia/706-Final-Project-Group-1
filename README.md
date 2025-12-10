@@ -2,7 +2,7 @@
 ### 706 Final Project Group 1
 **Authors:** Brittany Bustos, Anya Sharma, Radhika Sonthalia 
 
-**Last Update:** December 9th, 2025
+**Last Update:** December 10th, 2025
 
 
 The **main Streamlit app file is `main_dashboard_trial.py`**.
