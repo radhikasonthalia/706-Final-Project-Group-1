@@ -49,13 +49,16 @@ Each record represents an indicator value for a given country, year, and inequal
 
 ## Main Analysis Tasks in the App
 
-1. **Health Determinants – Baseline Conditions**  
+1. **Health Determinants – Baseline Conditions**
+   Author: Brittany Bustos 
    Visualize how economic status, education, and housing conditions (e.g., electricity) vary within countries to identify underlying structural disadvantages.
 
-2. **Immunization Coverage – Access to Services**  
+2. **Immunization Coverage – Access to Services**
+   Author: Anya Sharma
    Explore trends in vaccination coverage over time, by country and subgroup, to reveal progress, stagnation, or reversals in access to essential health services.
 
-3. **Under‑5 Mortality – Real‑World Outcomes**  
+3. **Under‑5 Mortality – Real‑World Outcomes**
+   Author: Radhika Sonthalia
    Examine under‑5 mortality patterns and how they track with determinants and coverage, including differences by sex and economic status.
 
 Together, these views help distinguish between countries where conditions are uniformly poor and those with stark internal disparities.
